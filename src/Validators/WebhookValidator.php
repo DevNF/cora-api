@@ -1,5 +1,5 @@
 <?php
-namespace NFService\Sicoob\Validators;
+namespace NFService\Cora\Validators;
 use Exception;
 use Valitron\Validator;
 class WebhookValidator

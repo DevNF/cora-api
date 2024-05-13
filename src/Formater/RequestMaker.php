@@ -1,11 +1,11 @@
 <?php
 
-namespace NFService\Sicoob\Formater;
+namespace NFService\Cora\Formater;
 
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
-use NFService\Sicoob\Options\EnvironmentUrls;
-use NFService\Sicoob\Sicoob;
+use NFService\Cora\Options\EnvironmentUrls;
+use NFService\Cora\Cora;
 use stdClass;
 
 
@@ -14,28 +14,28 @@ class RequestMaker
     private bool $debug;
     private bool $sandbox;
     private string $base_url;
-    private Sicoob $sicoob;
+    private Cora $cora;
     private array $certificatePub;
     private array $certificatePriv;
 
-    public function __construct(Sicoob $sicoob, bool $debug = false)
+    public function __construct(Cora $cora, bool $debug = false)
     {
 
-        if($sicoob->getIsProduction()) {
-            if(empty($sicoob->getCertificatePub())) {
+        if($cora->getIsProduction()) {
+            if(empty($cora->getCertificatePub())) {
                 throw new Exception('Caminho do certificado público é obrigatório');
             }
-            if(empty($sicoob->getCertificatePriv())) {
+            if(empty($cora->getCertificatePriv())) {
                 throw new Exception('Caminho do certificado privado é obrigatório');
             }
 
         }
-        $this->sicoob = $sicoob;
-        $this->base_url = !$sicoob->getIsProduction() ? EnvironmentUrls::sandbox_url : EnvironmentUrls::production_url;
+        $this->cora = $cora;
+        $this->base_url = !$cora->getIsProduction() ? EnvironmentUrls::sandbox_url : EnvironmentUrls::production_url;
         $this->debug = $debug;
-        $this->sandbox = !$sicoob->getIsProduction();
-        $this->certificatePub = $sicoob->getCertificatePub();
-        $this->certificatePriv = $sicoob->getCertificatePriv();
+        $this->sandbox = !$cora->getIsProduction();
+        $this->certificatePub = $cora->getCertificatePub();
+        $this->certificatePriv = $cora->getCertificatePriv();
     }
 
     public function requisicao(string $uri, string $metodo, ?array $corpo = null): string | GuzzleException | array | stdClass | null
@@ -45,8 +45,8 @@ class RequestMaker
             $response = $client->request($metodo, $this->base_url . $uri, [
                 'debug' => $this->debug,
                 'headers' => [
-                    'Authorization' => 'Bearer ' . $this->sicoob->getToken(),
-                    'client_id' => $this->sicoob->getClientId(),
+                    'Authorization' => 'Bearer ' . $this->cora->getToken(),
+                    'client_id' => $this->cora->getClientId(),
                     'Content-Type' => 'application/json'
                 ],
                 'json' => $corpo,

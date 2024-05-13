@@ -1,12 +1,12 @@
 <?php
 
-namespace NFService\Sicoob\Services;
+namespace NFService\Cora\Services;
 
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
-use NFService\Sicoob\Formater\RequestMaker;
-use NFService\Sicoob\Helpers\TxidGenerator;
-use NFService\Sicoob\Validators\WebhookValidator;
+use NFService\Cora\Formater\RequestMaker;
+use NFService\Cora\Helpers\TxidGenerator;
+use NFService\Cora\Validators\WebhookValidator;
 use stdClass;
 
 class Webhook

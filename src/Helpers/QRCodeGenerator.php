@@ -1,6 +1,6 @@
 <?php
 
-namespace NFService\Sicoob\Helpers;
+namespace NFService\Cora\Helpers;
 use chillerlan\QRCode\QRCode;
 
 

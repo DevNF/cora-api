@@ -1,13 +1,13 @@
 <?php
 
-namespace NFService\Sicoob\Services;
+namespace NFService\Cora\Services;
 
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
-use NFService\Sicoob\Formater\RequestMaker;
-use NFService\Sicoob\Helpers\QRCodeGenerator;
-use NFService\Sicoob\Validators\CobVValidator;
-use NFService\Sicoob\Helpers\TxidGenerator;
+use NFService\Cora\Formater\RequestMaker;
+use NFService\Cora\Helpers\QRCodeGenerator;
+use NFService\Cora\Validators\CobVValidator;
+use NFService\Cora\Helpers\TxidGenerator;
 use Ramsey\Uuid\Uuid;
 use stdClass;
 

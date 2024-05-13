@@ -1,9 +1,11 @@
 <?php
-namespace NFService\Sicoob\Options;
+namespace NFService\Cora\Options;
 
 class EnvironmentUrls
 {
-    public const auth_url = 'https://auth.sicoob.com.br/auth/realms/cooperado/protocol/openid-connect/token';
-    public const production_url = 'https://api.sicoob.com.br/pix/api/v2';
-    public const sandbox_url = 'https://sandbox.sicoob.com.br/sicoob/sandbox/pix/api/v2';
+    // urls para Parceria Cora (existem url para api direto, porém utilizaremos Parceria)
+    public const auth_url_sandbox = 'https://api.stage.cora.com.br/oauth/token';
+    public const auth_url_production = 'https://api.cora.com.br/oauth/token';
+    public const production_url = 'https://api.cora.com.br/';
+    public const sandbox_url = 'https://api.stage.cora.com.br/';
 }

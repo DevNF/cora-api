@@ -1,12 +1,12 @@
 <?php
 
-namespace NFService\Sicoob\Services;
+namespace NFService\Cora\Services;
 
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
-use NFService\Sicoob\Formater\RequestMaker;
-use NFService\Sicoob\Helpers\QRCodeGenerator;
-use NFService\Sicoob\Validators\CobValidator;
+use NFService\Cora\Formater\RequestMaker;
+use NFService\Cora\Helpers\QRCodeGenerator;
+use NFService\Cora\Validators\CobValidator;
 use stdClass;
 
 class Cob

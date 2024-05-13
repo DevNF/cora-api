@@ -1,5 +1,5 @@
 <?php
-namespace NFService\Sicoob\Helpers;
+namespace NFService\Cora\Helpers;
 
 use Ramsey\Uuid\Uuid;
 

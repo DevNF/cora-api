@@ -1,16 +1,16 @@
 <?php
 
-namespace NFService\Sicoob;
+namespace NFService\Cora;
 
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
-use NFService\Sicoob\Formater\RequestMaker;
-use NFService\Sicoob\Options\EnvironmentUrls;
-use NFService\Sicoob\Services\Cob;
-use NFService\Sicoob\Services\CobV;
-use NFService\Sicoob\Services\Webhook;
+use NFService\Cora\Formater\RequestMaker;
+use NFService\Cora\Options\EnvironmentUrls;
+use NFService\Cora\Services\Cob;
+use NFService\Cora\Services\CobV;
+use NFService\Cora\Services\Webhook;
 
-class Sicoob
+class Cora
 {
     private string $base_url;
     private bool $isProduction;
