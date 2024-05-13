@@ -18,7 +18,7 @@
     "require": {
         "guzzlehttp/guzzle": "^7.0.1",
         "vlucas/valitron": "dev-master",
-        "ramsey/uuid": "4.x-dev",
+        "ramsey/uuid": "4.7.6",
         "chillerlan/php-qrcode": "5.0.1",
         "nfhub/coraboleto": "dev-master"
     }
