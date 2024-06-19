@@ -2,12 +2,13 @@
 
 namespace NFService\Cora;
 
+use App\Models\Account;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use NFService\Cora\Formater\RequestMaker;
 use NFService\Cora\Options\EnvironmentUrls;
-use NFService\Cora\Services\Cob;
-use NFService\Cora\Services\CobV;
+use NFService\Cora\Services\Account as ServicesAccount;
+use NFService\Cora\Services\Boleto as ServicesBoleto;
 use NFService\Cora\Services\Webhook;
 
 class Cora
@@ -15,85 +16,157 @@ class Cora
     private string $base_url;
     private bool $isProduction;
     private string $client_id;
-    private string $permissions;
+    private string $client_secret_id;
+    private string $refresh_token;
+    private string $code;
+    private string $account_id;
     private string $token;
-    private string $sandboxToken;
     private int $expires_in;
-    private array $certificatePub;
-    private array $certificatePriv;
     private RequestMaker $requestMaker;
 
     public function __construct(
         bool $isProduction = true,
         string $client_id,
-        string $certificatePubPath,
-        ?string $certificatePubPass,
-        string $certificatePrivPath,
-        ?string $certificatePrivPass,
-        ?string $permissions = null,
-        ?string $sandboxToken = null
+        string $client_secret_id,
+        string $code = '',
+        string $account_id = null,
+        string $token = null
     ) {
         if(empty($client_id)) {
             throw new Exception('Client ID é obrigatório');
         }
-        if(!$isProduction && empty($sandboxToken)) {
-            throw new Exception('Sandbox Token é obrigatório');
-        }
-        if($isProduction && empty($certificatePubPath)) {
-            throw new Exception('Caminho do certificado público é obrigatório');
-        }
-        if($isProduction && empty($certificatePrivPath)) {
-            throw new Exception('Caminho do certificado privado é obrigatório');
+        if(empty($client_secret_id)) {
+            throw new Exception('Client Secret é obrigatório');
         }
 
         $this->isProduction = $isProduction;
-        $this->base_url = EnvironmentUrls::auth_url;
+        $this->base_url = $isProduction ? EnvironmentUrls::auth_url_production : EnvironmentUrls::auth_url_sandbox;
         $this->client_id = $client_id;
-        $this->permissions = !empty($permissions) ? $permissions : 'cob.read cob.write cobv.write cobv.read lotecobv.write lotecobv.read pix.write pix.read webhook.read webhook.write payloadlocation.write payloadlocation.read';
-        $this->certificatePub = [$certificatePubPath, $certificatePubPass];
-        $this->certificatePriv = [$certificatePrivPath, $certificatePrivPass];
-        $this->token = $isProduction ? $this->gerarToken() : $sandboxToken;
-        $this->requestMaker = new RequestMaker($this, !$isProduction);
+        $this->client_secret_id = $client_secret_id;
+        $this->code = $code;
+        $this->account_id = $account_id;
+        $this->token = $token ?? $this->gerarToken();
+        $this->requestMaker = new RequestMaker($this, false);
         $this->expires_in = 0;
     }
 
     public function gerarToken(): string | GuzzleException
     {
 
-        if($this->isProduction && !empty($this->token)) {
+        if(!empty($this->token)) {
             return $this->token;
         }
 
         $client = new \GuzzleHttp\Client();
 
         try {
+            $env = (string) config('app.environment')[config('app.env')];
+            $redirect_uri = match($env) {
+                '1' => EnvironmentUrls::redirect_uri_production,
+                '2' => EnvironmentUrls::redirect_uri_local,
+                '3' => EnvironmentUrls::redirect_uri_sandbox,
+            };
+            $authorization = base64_encode($this->client_id . ':' . $this->client_secret_id);
+            $redirectUri = $redirect_uri . '/' . $this->account_id;
+
             $response = $client->request('POST', $this->base_url, [
-                'form_params' => [
-                    'client_id' => $this->client_id,
-                    'grant_type' => 'client_credentials',
-                    'scope' => $this->permissions
+                'headers' => [
+                    'Content-Type' => 'application/x-www-form-urlencoded',
+                    'Authorization' => 'Basic ' . $authorization,
                 ],
-                'cert' => $this->certificatePub,
-                'ssl_key' => $this->certificatePriv,
+                'form_params' => [
+                    'grant_type' => 'authorization_code',
+                    'code' => $this->code,
+                    'redirect_uri' => $redirectUri,
+                ],
             ]);
 
-            $response = json_decode($response->getBody()->getContents());
 
-            $this->expires_in = time() + $response->expires_in;
-            $this->token = $response->access_token;
-            return $this->token;
+            $responseBody = $response->getBody()->getContents();
+            $responseData = json_decode($responseBody, true);
+
+            $this->expires_in = time() + $responseData['expires_in'];
+            $this->token = $responseData['access_token'];
+            $this->refresh_token = $responseData['refresh_token'];
+
+            $responseData['expires_in'] = $this->expires_in;
+            $responseBody = json_encode($responseData);
+
+            return $responseBody;
         } catch (GuzzleException $e) {
-            return $e;
+            $errorMessage = $e->getMessage();
+
+            // Extrair o erro e a descrição do erro da mensagem de erro
+            preg_match('/"error":\\"([^\\"]+)",\\"error_description":\\"([^\\"]+)\\"/', $errorMessage, $matches);
+
+            if (count($matches) == 3) {
+                $error = $matches[1];
+                $errorDescription = $matches[2];
+
+                $errorData = [
+                    'errors' => $error . ' - ' . $errorDescription
+                ];
+
+                return json_encode($errorData);
+            } else {
+                return $errorMessage;
+            }
+        }
+    }
+
+    public function refreshToken(string $refresh_token): string | GuzzleException
+    {
+        $client = new \GuzzleHttp\Client();
+
+        try {
+            $authorization = base64_encode($this->client_id . ':' . $this->client_secret_id);
+
+            $response = $client->request('POST', $this->base_url, [
+                'headers' => [
+                    'Content-Type' => 'application/x-www-form-urlencoded',
+                    'Authorization' => 'Basic ' . $authorization,
+                ],
+                'form_params' => [
+                    'grant_type' => 'refresh_token',
+                    'refresh_token' => $refresh_token,
+                ],
+            ]);
+
+            $responseBody = $response->getBody()->getContents();
+            $responseData = json_decode($responseBody, true);
+
+            $this->expires_in = time() + $responseData['expires_in'];
+            $this->token = $responseData['access_token'];
+            $this->refresh_token = $responseData['refresh_token'];
+
+            $responseData['expires_in'] = $this->expires_in;
+            $responseBody = json_encode($responseData);
+
+            return $responseBody;
+        } catch (GuzzleException $e) {
+            $errorMessage = $e->getMessage();
+
+            // Extrair o erro e a descrição do erro da mensagem de erro
+            preg_match('/"error":\\"([^\\"]+)",\\"error_description":\\"([^\\"]+)\\"/', $errorMessage, $matches);
+
+            if (count($matches) == 3) {
+                $error = $matches[1];
+                $errorDescription = $matches[2];
+
+                $errorData = [
+                    'errors' => $error . ' - ' . $errorDescription
+                ];
+
+                return json_encode($errorData);
+            } else {
+                return $errorMessage;
+            }
         }
     }
 
     public function getToken(): string
     {
         if(empty($this->token)) {
-            $this->gerarToken();
-        }
-
-        if($this->isProduction && $this->expires_in < time()) {
             $this->gerarToken();
         }
 
@@ -105,14 +178,29 @@ class Cora
         return $this->client_id;
     }
 
+    public function getClientSecretId(): string
+    {
+        return $this->client_secret_id;
+    }
+
+    public function getRefreshToken(): string
+    {
+        return $this->refresh_token;
+    }
+
+    public function getCode(): string
+    {
+        return $this->code;
+    }
+
+    public function getAccountId(): string
+    {
+        return $this->account_id;
+    }
+
     public function getExpiresIn(): int
     {
         return $this->expires_in;
-    }
-
-    public function getPermissions(): string
-    {
-        return $this->permissions;
     }
 
     public function getBaseUrl(): string
@@ -125,28 +213,18 @@ class Cora
         return $this->isProduction;
     }
 
-    public function getCertificatePub(): array
-    {
-        return $this->certificatePub;
-    }
-
-    public function getCertificatePriv(): array
-    {
-        return $this->certificatePriv;
-    }
-
     public function getRequestMaker(): RequestMaker {
         return $this->requestMaker;
     }
 
-    public function cob(string $txid = null, bool $debug = false): Cob
+    public function account(string $token = null, bool $debug = false): ServicesAccount
     {
-        return new Cob($this->getRequestMaker(), $txid);
+        return new ServicesAccount($this->getRequestMaker());
     }
 
-    public function cobv(string $txid = null, bool $debug = false): CobV
+    public function boleto(string $token = null, bool $debug = false): ServicesBoleto
     {
-        return new CobV($this->getRequestMaker(), $txid);
+        return new ServicesBoleto($this->getRequestMaker(), $token);
     }
 
     public function webhook(string $chave = null, bool $debug = false): Webhook

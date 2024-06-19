@@ -14,46 +14,44 @@ class RequestMaker
     private bool $debug;
     private bool $sandbox;
     private string $base_url;
+    private string $token;
     private Cora $cora;
-    private array $certificatePub;
-    private array $certificatePriv;
 
-    public function __construct(Cora $cora, bool $debug = false)
+    public function __construct(Cora $cora,  bool $debug = false)
     {
-
-        if($cora->getIsProduction()) {
-            if(empty($cora->getCertificatePub())) {
-                throw new Exception('Caminho do certificado público é obrigatório');
-            }
-            if(empty($cora->getCertificatePriv())) {
-                throw new Exception('Caminho do certificado privado é obrigatório');
-            }
-
-        }
         $this->cora = $cora;
         $this->base_url = !$cora->getIsProduction() ? EnvironmentUrls::sandbox_url : EnvironmentUrls::production_url;
         $this->debug = $debug;
         $this->sandbox = !$cora->getIsProduction();
-        $this->certificatePub = $cora->getCertificatePub();
-        $this->certificatePriv = $cora->getCertificatePriv();
+        $this->token = $cora->getToken();
     }
 
-    public function requisicao(string $uri, string $metodo, ?array $corpo = null): string | GuzzleException | array | stdClass | null
+    public function requisicao(string $uri, string $metodo, ?array $corpo = null, ?array $queryparams = null): string | GuzzleException | array | stdClass | null
     {
         try {
             $client = new \GuzzleHttp\Client();
+            $access_token = $this->token;
+
+            $headers = [
+                'Content-Type' => 'application/json',
+                'Authorization' => 'Bearer ' . $access_token,
+            ];
+
+            if (isset($corpo['idempotencyKey']) && !empty($corpo['idempotencyKey'])) {
+                $headers['Idempotency-Key'] = $corpo['idempotencyKey'];
+                unset($corpo['idempotencyKey']);
+            }
+
             $response = $client->request($metodo, $this->base_url . $uri, [
                 'debug' => $this->debug,
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $this->cora->getToken(),
-                    'client_id' => $this->cora->getClientId(),
-                    'Content-Type' => 'application/json'
-                ],
+                'headers' => $headers,
                 'json' => $corpo,
-                'cert' => $this->certificatePub,
-                'ssl_key' => $this->certificatePriv
+                'query' => $queryparams
             ]);
 
+            if(strpos($uri, 'endpoints') !== false && strtoupper($metodo) === 'POST') {
+                return $response->getBody()->getContents();
+            }
 
             return json_decode($response->getBody()->getContents());
 

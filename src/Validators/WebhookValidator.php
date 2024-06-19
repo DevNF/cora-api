@@ -12,11 +12,11 @@ class WebhookValidator
         $this->body = $body;
     }
 
-    public function validatePut()
+    public function validateWebhook()
     {
         $v = (new Validator($this->body));
-        $v->rule('required', ['webhookUrl']);
-        $v->rule('lengthMax', 'webhookUrl', 200);
+        $v->rule('required', ['url', 'resource', 'trigger']);
+        $v->rule('LengthMax', 'url', 200);
 
         if(!$v->validate()) {
             $errors = $v->errors();
