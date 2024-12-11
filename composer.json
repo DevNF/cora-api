@@ -17,7 +17,7 @@
     "minimum-stability": "dev",
     "require": {
         "guzzlehttp/guzzle": "^7.0.1",
-        "vlucas/valitron": "dev-master",
+        "vlucas/valitron": ">= 1.4.11",
         "ramsey/uuid": "4.7.6",
         "chillerlan/php-qrcode": "5.0.1",
         "nfhub/coraboleto": "dev-master"
