@@ -10,7 +10,7 @@ class EnvironmentUrls
     public const sandbox_url = 'https://api.stage.cora.com.br/';
 
     // urls para Redirecionamento
-    public const redirect_uri_sandbox = 'https://sandbox.fuganholi-easy.com.br/cora/callback';
-    public const redirect_uri_production = 'https://fuganholi-easy.com.br/cora/callback';
+    public const redirect_uri_sandbox = 'https://api.sandbox.fuganholi-easy.com.br/cora/callback';
+    public const redirect_uri_production = 'https://api.fuganholi-easy.com.br/cora/callback';
     public const redirect_uri_local = 'https://api.nfservice.com.br/cora/callback';
 }
