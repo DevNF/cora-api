@@ -67,7 +67,7 @@ class Cora
                 '3' => EnvironmentUrls::redirect_uri_sandbox,
             };
             $authorization = base64_encode($this->client_id . ':' . $this->client_secret_id);
-            $redirectUri = $redirect_uri . '/' . $this->account_id;
+            $redirectUri = $redirect_uri . '?account_id=' . $this->account_id;
 
             $response = $client->request('POST', $this->base_url, [
                 'headers' => [
